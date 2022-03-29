@@ -33,18 +33,15 @@ COPY internal/ internal/
 ENV CGO_ENABLED=0
 RUN xx-go build -a -o image-reflector-controller main.go
 
-FROM alpine:3.15
+FROM registry.access.redhat.com/ubi8/ubi
 
 LABEL org.opencontainers.image.source="https://github.com/fluxcd/image-reflector-controller"
 
-# Create minimal nsswitch.conf file to prioritize the usage of /etc/hosts over DNS queries.
-# https://github.com/gliderlabs/docker-alpine/issues/367#issuecomment-354316460
-RUN [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
-
-RUN apk add --no-cache ca-certificates tini
+ARG TARGETPLATFORM
+RUN yum install -y ca-certificates
 
 COPY --from=builder /workspace/image-reflector-controller /usr/local/bin/
 
 USER 65534:65534
 
-ENTRYPOINT [ "/sbin/tini", "--", "image-reflector-controller" ]
+ENTRYPOINT [ "image-reflector-controller" ]
